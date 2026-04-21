@@ -1614,7 +1614,7 @@ MIT License — see [LICENSE](./LICENSE) for full text.
 - **Architecture**: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - **Windows Setup**: [WINDOWS-SETUP.md](./WINDOWS-SETUP.md)
 - **Issues**: https://github.com/your-org/IRIS-Forensic-assis/issues
-- **Email**: security@iris-dfir.example.com
+- **Email**: syedraihaan.ms@gmail.com
 
 ---
 
