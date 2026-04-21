@@ -1,0 +1,630 @@
+openapi: 3.1.0
+info:
+  title: IRIS DFIR API
+  version: 1.0.0
+  description: >
+    Production-oriented DFIR API for ingestion, event normalization, graph investigation,
+    timeline replay, and alert explanation.
+servers:
+  - url: /api/v1
+tags:
+  - name: ingest
+  - name: events
+  - name: graph
+  - name: timeline
+  - name: alerts
+
+paths:
+  /ingest:
+    post:
+      tags: [ingest]
+      summary: Submit telemetry artifacts for ingestion
+      operationId: submitIngestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+            examples:
+              sample:
+                value:
+                  investigation_id: demo-phishing-001
+                  source: sysmon
+                  artifacts:
+                    - artifact_id: sysmon-chain-1
+                      artifact_type: jsonl
+                      content_type: application/jsonl
+                      records:
+                        - EventID: 1
+                          UtcTime: "2025-01-12T08:14:03Z"
+                          Computer: WKSTN-07
+                          Image: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+      responses:
+        '202':
+          description: Ingestion accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestJobResponse'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ingest/jobs/{job_id}:
+    get:
+      tags: [ingest]
+      summary: Get ingestion job status
+      operationId: getIngestJobStatus
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestJobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events:
+    get:
+      tags: [events]
+      summary: List normalized events
+      operationId: listEvents
+      parameters:
+        - $ref: '#/components/parameters/InvestigationId'
+        - in: query
+          name: source
+          schema:
+            $ref: '#/components/schemas/EventSource'
+        - in: query
+          name: host
+          schema:
+            type: string
+        - in: query
+          name: user
+          schema:
+            type: string
+        - in: query
+          name: severity
+          schema:
+            $ref: '#/components/schemas/SeverityLevel'
+        - in: query
+          name: start_time
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: end_time
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Canonical events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NormalizedEvent'
+                  total:
+                    type: integer
+                required: [items, total]
+
+  /graph:
+    get:
+      tags: [graph]
+      summary: Retrieve investigation graph
+      operationId: getGraph
+      parameters:
+        - $ref: '#/components/parameters/InvestigationId'
+        - in: query
+          name: host
+          schema:
+            type: string
+        - in: query
+          name: user
+          schema:
+            type: string
+        - in: query
+          name: severity
+          schema:
+            $ref: '#/components/schemas/SeverityLevel'
+      responses:
+        '200':
+          description: Graph response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphResponse'
+
+  /graph/attack-paths:
+    post:
+      tags: [graph]
+      summary: Discover likely attack paths between entities
+      operationId: findAttackPaths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttackPathRequest'
+      responses:
+        '200':
+          description: Attack path graph
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphResponse'
+
+  /timeline:
+    get:
+      tags: [timeline]
+      summary: Retrieve ordered investigative timeline
+      operationId: getTimeline
+      parameters:
+        - $ref: '#/components/parameters/InvestigationId'
+        - in: query
+          name: host
+          schema:
+            type: string
+        - in: query
+          name: user
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimelineResponse'
+
+  /timeline/replay:
+    get:
+      tags: [timeline]
+      summary: Retrieve timeline replay snapshot
+      operationId: getTimelineReplay
+      parameters:
+        - $ref: '#/components/parameters/InvestigationId'
+        - in: query
+          name: at
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Timeline replay data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimelineReplayResponse'
+
+  /alerts:
+    get:
+      tags: [alerts]
+      summary: List alerts for an investigation
+      operationId: listAlerts
+      parameters:
+        - $ref: '#/components/parameters/InvestigationId'
+        - in: query
+          name: severity
+          schema:
+            $ref: '#/components/schemas/SeverityLevel'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/AlertStatus'
+        - in: query
+          name: phase
+          schema:
+            $ref: '#/components/schemas/AttackPhase'
+      responses:
+        '200':
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertListResponse'
+
+  /alerts/{alert_id}/explanation:
+    get:
+      tags: [alerts]
+      summary: Retrieve alert explanation
+      operationId: getAlertExplanation
+      parameters:
+        - in: path
+          name: alert_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Alert explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExplanationResponse'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    InvestigationId:
+      in: query
+      name: investigation_id
+      required: false
+      schema:
+        type: string
+        default: demo-phishing-001
+
+  schemas:
+    EventSource:
+      type: string
+      enum: [sysmon, evtx, pcap, edr, manual]
+    EventCategory:
+      type: string
+      enum: [process, network, file, registry, authentication, task, powershell, service, alert]
+    SeverityLevel:
+      type: string
+      enum: [low, medium, high, critical]
+    AttackPhase:
+      type: string
+      enum:
+        - initial_access
+        - execution
+        - persistence
+        - privilege_escalation
+        - defense_evasion
+        - credential_access
+        - discovery
+        - lateral_movement
+        - collection
+        - command_and_control
+        - exfiltration
+    AlertStatus:
+      type: string
+      enum: [new, triaged, investigating, contained, closed]
+    EntityRef:
+      type: object
+      properties:
+        entity_id:
+          type: string
+        entity_type:
+          type: string
+        name:
+          type: string
+        display_name:
+          type: string
+        risk_score:
+          type: number
+        properties:
+          type: object
+          additionalProperties: true
+      required: [entity_id, entity_type, name]
+    ProcessContext:
+      type: object
+      properties:
+        image: { type: string }
+        command_line: { type: string }
+        parent_image: { type: string }
+        parent_command_line: { type: string }
+        process_guid: { type: string }
+        parent_process_guid: { type: string }
+        pid: { type: integer }
+        parent_pid: { type: integer }
+        user: { type: string }
+        hashes:
+          type: object
+          additionalProperties: { type: string }
+    NetworkContext:
+      type: object
+      properties:
+        source_ip: { type: string }
+        destination_ip: { type: string }
+        source_port: { type: integer }
+        destination_port: { type: integer }
+        protocol: { type: string }
+        domain: { type: string }
+        sni: { type: string }
+        bytes_in: { type: integer }
+        bytes_out: { type: integer }
+    FileContext:
+      type: object
+      properties:
+        path: { type: string }
+        file_name: { type: string }
+        hashes:
+          type: object
+          additionalProperties: { type: string }
+    RegistryContext:
+      type: object
+      properties:
+        path: { type: string }
+        value_name: { type: string }
+        value_data: { type: string }
+        operation: { type: string }
+    NormalizedEvent:
+      type: object
+      properties:
+        event_id: { type: string }
+        investigation_id: { type: string }
+        timestamp:
+          type: string
+          format: date-time
+        source:
+          $ref: '#/components/schemas/EventSource'
+        category:
+          $ref: '#/components/schemas/EventCategory'
+        action: { type: string }
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+        attack_phase:
+          $ref: '#/components/schemas/AttackPhase'
+        host: { type: string }
+        user: { type: string }
+        message: { type: string }
+        confidence: { type: number }
+        evidence:
+          type: array
+          items: { type: string }
+        raw_ref:
+          type: object
+          additionalProperties: true
+        parser:
+          type: object
+          additionalProperties: true
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityRef'
+        process:
+          $ref: '#/components/schemas/ProcessContext'
+        network:
+          $ref: '#/components/schemas/NetworkContext'
+        file:
+          $ref: '#/components/schemas/FileContext'
+        registry:
+          $ref: '#/components/schemas/RegistryContext'
+      required: [event_id, timestamp, source, category, action, severity, confidence]
+    IngestArtifact:
+      type: object
+      properties:
+        artifact_id: { type: string }
+        artifact_type: { type: string }
+        content_type: { type: string }
+        records:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required: [artifact_id, artifact_type, content_type, records]
+    IngestRequest:
+      type: object
+      properties:
+        investigation_id: { type: string }
+        source:
+          $ref: '#/components/schemas/EventSource'
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestArtifact'
+      required: [investigation_id, source, artifacts]
+    IngestJobResponse:
+      type: object
+      properties:
+        job_id: { type: string }
+        investigation_id: { type: string }
+        status: { type: string }
+        submitted_at:
+          type: string
+          format: date-time
+      required: [job_id, investigation_id, status, submitted_at]
+    IngestJobStatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/IngestJobResponse'
+        - type: object
+          properties:
+            completed_at:
+              type: string
+              format: date-time
+            artifact_count:
+              type: integer
+            event_count:
+              type: integer
+            errors:
+              type: array
+              items: { type: string }
+    GraphNode:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        label: { type: string }
+        risk_score: { type: number }
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+        properties:
+          type: object
+          additionalProperties: true
+      required: [id, type, label]
+    GraphEdge:
+      type: object
+      properties:
+        id: { type: string }
+        source: { type: string }
+        target: { type: string }
+        type: { type: string }
+        label: { type: string }
+        properties:
+          type: object
+          additionalProperties: true
+      required: [id, source, target, type]
+    GraphResponse:
+      type: object
+      properties:
+        investigation_id: { type: string }
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdge'
+        paths:
+          type: array
+          items:
+            type: array
+            items: { type: string }
+      required: [investigation_id, nodes, edges]
+    AttackPathRequest:
+      type: object
+      properties:
+        investigation_id: { type: string }
+        source_entity_id: { type: string }
+        target_entity_id: { type: string }
+      required: [investigation_id, source_entity_id, target_entity_id]
+    TimelineEntry:
+      type: object
+      properties:
+        entry_id: { type: string }
+        timestamp:
+          type: string
+          format: date-time
+        phase:
+          $ref: '#/components/schemas/AttackPhase'
+        title: { type: string }
+        description: { type: string }
+        event_ids:
+          type: array
+          items: { type: string }
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityRef'
+      required: [entry_id, timestamp, phase, title, severity]
+    TimelinePhaseGroup:
+      type: object
+      properties:
+        phase:
+          $ref: '#/components/schemas/AttackPhase'
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEntry'
+      required: [phase, start_time, end_time, entries]
+    TimelineResponse:
+      type: object
+      properties:
+        investigation_id: { type: string }
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEntry'
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelinePhaseGroup'
+      required: [investigation_id, entries, phases]
+    TimelineReplayResponse:
+      type: object
+      properties:
+        investigation_id: { type: string }
+        replay_time:
+          type: string
+          format: date-time
+        visible_entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEntry'
+      required: [investigation_id, replay_time, visible_entries]
+    AlertEvidence:
+      type: object
+      properties:
+        event_id: { type: string }
+        summary: { type: string }
+        confidence: { type: number }
+      required: [event_id, summary]
+    Alert:
+      type: object
+      properties:
+        alert_id: { type: string }
+        investigation_id: { type: string }
+        name: { type: string }
+        family: { type: string }
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+        phase:
+          $ref: '#/components/schemas/AttackPhase'
+        confidence: { type: number }
+        risk_score: { type: number }
+        status:
+          $ref: '#/components/schemas/AlertStatus'
+        description: { type: string }
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertEvidence'
+      required: [alert_id, investigation_id, name, family, severity, phase, confidence, risk_score, status]
+    AlertListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        total: { type: integer }
+      required: [items, total]
+    ExplanationResponse:
+      type: object
+      properties:
+        alert_id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        reasoning_chain:
+          type: array
+          items: { type: string }
+        tactics:
+          type: array
+          items: { type: string }
+        confidence_summary: { type: string }
+        next_steps:
+          type: array
+          items: { type: string }
+      required: [alert_id, title, summary, reasoning_chain, tactics, confidence_summary, next_steps]
+    ErrorResponse:
+      type: object
+      properties:
+        detail: { type: string }
+      required: [detail]

@@ -1,0 +1,99 @@
+{
+  "investigation_id": "demo-phishing-001",
+  "nodes": [
+    {
+      "id": "host:WKSTN-07",
+      "type": "host",
+      "label": "WKSTN-07",
+      "risk_score": 82.5,
+      "severity": "high",
+      "properties": {
+        "hostname": "WKSTN-07",
+        "criticality": "medium"
+      }
+    },
+    {
+      "id": "user:CORP\\jdoe",
+      "type": "user",
+      "label": "CORP\\jdoe",
+      "risk_score": 68.0,
+      "severity": "medium",
+      "properties": {
+        "username": "jdoe",
+        "domain": "CORP"
+      }
+    },
+    {
+      "id": "process:{A1-B1-C2}",
+      "type": "process",
+      "label": "powershell.exe",
+      "risk_score": 91.2,
+      "severity": "critical",
+      "properties": {
+        "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "command_line": "powershell.exe -enc ..."
+      }
+    },
+    {
+      "id": "ip:185.199.110.153",
+      "type": "ip",
+      "label": "185.199.110.153",
+      "risk_score": 70.0,
+      "severity": "high",
+      "properties": {
+        "address": "185.199.110.153",
+        "is_private": false
+      }
+    },
+    {
+      "id": "alert:alert-credential-dump-1",
+      "type": "alert",
+      "label": "Credential dumping indicators detected",
+      "risk_score": 96.4,
+      "severity": "critical",
+      "properties": {
+        "family": "credential_dumping",
+        "phase": "credential_access"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "process:{A1-B1-C2}",
+      "target": "host:WKSTN-07",
+      "type": "EXECUTED_ON",
+      "label": "executed on",
+      "properties": {
+        "first_seen": "2025-01-12T08:14:21Z"
+      }
+    },
+    {
+      "id": "edge-2",
+      "source": "process:{A1-B1-C2}",
+      "target": "ip:185.199.110.153",
+      "type": "CONNECTED_TO",
+      "label": "connected to",
+      "properties": {
+        "port": 443,
+        "bytes_out": 13842
+      }
+    },
+    {
+      "id": "edge-3",
+      "source": "alert:alert-credential-dump-1",
+      "target": "process:{A1-B1-C2}",
+      "type": "TARGETS",
+      "label": "targets",
+      "properties": {}
+    }
+  ],
+  "paths": [
+    [
+      "user:CORP\\jdoe",
+      "host:WKSTN-07",
+      "process:{A1-B1-C2}",
+      "ip:185.199.110.153"
+    ]
+  ]
+}

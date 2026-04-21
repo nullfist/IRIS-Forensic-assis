@@ -1,0 +1,89 @@
+{
+  "info": {
+    "name": "IRIS DFIR API",
+    "_postman_id": "c4d30840-f040-4a6f-b089-iris-demo-001",
+    "description": "Collection for ingesting demo telemetry and querying IRIS investigative APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1" },
+    { "key": "investigationId", "value": "demo-phishing-001" },
+    { "key": "jobId", "value": "replace-with-returned-job-id" },
+    { "key": "alertId", "value": "alert-credential-dump-1" }
+  ],
+  "item": [
+    {
+      "name": "Ingest Sample",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/ingest",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  "investigation_id": "{{investigationId}}",\n  "source": "sysmon",\n  "artifacts": [\n    {\n      "artifact_id": "sysmon-chain-1",\n      "artifact_type": "jsonl",\n      "content_type": "application/jsonl",\n      "records": [\n        {\n          "EventID": 1,\n          "UtcTime": "2025-01-12T08:14:03Z",\n          "Computer": "WKSTN-07",\n          "User": "CORP\\\\jdoe",\n          "Image": "C:\\\\Program Files\\\\Microsoft Office\\\\root\\\\Office16\\\\WINWORD.EXE"\n        }\n      ]\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Ingest Job",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/ingest/jobs/{{jobId}}"
+      }
+    },
+    {
+      "name": "List Events",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/events?investigation_id={{investigationId}}"
+      }
+    },
+    {
+      "name": "Get Graph",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/graph?investigation_id={{investigationId}}"
+      }
+    },
+    {
+      "name": "Find Attack Paths",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/graph/attack-paths",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  "investigation_id": "{{investigationId}}",\n  "source_entity_id": "host:WKSTN-07",\n  "target_entity_id": "ip:185.199.110.153"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Timeline",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/timeline?investigation_id={{investigationId}}"
+      }
+    },
+    {
+      "name": "Replay Timeline",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/timeline/replay?investigation_id={{investigationId}}&at=2025-01-12T08:20:00Z"
+      }
+    },
+    {
+      "name": "List Alerts",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/alerts?investigation_id={{investigationId}}"
+      }
+    },
+    {
+      "name": "Get Alert Explanation",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/alerts/{{alertId}}/explanation"
+      }
+    }
+  ]
+}

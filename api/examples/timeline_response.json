@@ -1,0 +1,151 @@
+{
+  "investigation_id": "demo-phishing-001",
+  "entries": [
+    {
+      "entry_id": "t1",
+      "timestamp": "2025-01-12T08:14:03Z",
+      "phase": "initial_access",
+      "title": "User opened malicious document",
+      "description": "WINWORD.EXE opened a macro-enabled document received from email.",
+      "event_ids": ["evt-1001"],
+      "severity": "medium",
+      "entities": [
+        {
+          "entity_id": "host:WKSTN-07",
+          "entity_type": "host",
+          "name": "WKSTN-07",
+          "display_name": "WKSTN-07",
+          "risk_score": 55.0,
+          "properties": {}
+        }
+      ]
+    },
+    {
+      "entry_id": "t2",
+      "timestamp": "2025-01-12T08:14:21Z",
+      "phase": "execution",
+      "title": "PowerShell spawned from Word",
+      "description": "Encoded PowerShell launched from WINWORD.EXE.",
+      "event_ids": ["evt-1002"],
+      "severity": "high",
+      "entities": []
+    },
+    {
+      "entry_id": "t3",
+      "timestamp": "2025-01-12T08:18:42Z",
+      "phase": "credential_access",
+      "title": "LSASS access attempt",
+      "description": "procdump.exe referenced lsass.exe and created a dump file.",
+      "event_ids": ["evt-1006", "evt-1007"],
+      "severity": "critical",
+      "entities": []
+    },
+    {
+      "entry_id": "t4",
+      "timestamp": "2025-01-12T08:25:15Z",
+      "phase": "lateral_movement",
+      "title": "Remote service execution on APP-02",
+      "description": "sc.exe created and started a temporary service over SMB/RPC.",
+      "event_ids": ["evt-1009", "evt-1010"],
+      "severity": "critical",
+      "entities": []
+    },
+    {
+      "entry_id": "t5",
+      "timestamp": "2025-01-12T08:33:09Z",
+      "phase": "exfiltration",
+      "title": "Suspicious outbound archive transfer",
+      "description": "Archive file uploaded over HTTPS to an external host.",
+      "event_ids": ["evt-1013"],
+      "severity": "high",
+      "entities": []
+    }
+  ],
+  "phases": [
+    {
+      "phase": "initial_access",
+      "start_time": "2025-01-12T08:14:03Z",
+      "end_time": "2025-01-12T08:14:03Z",
+      "entries": [
+        {
+          "entry_id": "t1",
+          "timestamp": "2025-01-12T08:14:03Z",
+          "phase": "initial_access",
+          "title": "User opened malicious document",
+          "description": "WINWORD.EXE opened a macro-enabled document received from email.",
+          "event_ids": ["evt-1001"],
+          "severity": "medium",
+          "entities": []
+        }
+      ]
+    },
+    {
+      "phase": "execution",
+      "start_time": "2025-01-12T08:14:21Z",
+      "end_time": "2025-01-12T08:14:21Z",
+      "entries": [
+        {
+          "entry_id": "t2",
+          "timestamp": "2025-01-12T08:14:21Z",
+          "phase": "execution",
+          "title": "PowerShell spawned from Word",
+          "description": "Encoded PowerShell launched from WINWORD.EXE.",
+          "event_ids": ["evt-1002"],
+          "severity": "high",
+          "entities": []
+        }
+      ]
+    },
+    {
+      "phase": "credential_access",
+      "start_time": "2025-01-12T08:18:42Z",
+      "end_time": "2025-01-12T08:18:55Z",
+      "entries": [
+        {
+          "entry_id": "t3",
+          "timestamp": "2025-01-12T08:18:42Z",
+          "phase": "credential_access",
+          "title": "LSASS access attempt",
+          "description": "procdump.exe referenced lsass.exe and created a dump file.",
+          "event_ids": ["evt-1006", "evt-1007"],
+          "severity": "critical",
+          "entities": []
+        }
+      ]
+    },
+    {
+      "phase": "lateral_movement",
+      "start_time": "2025-01-12T08:25:15Z",
+      "end_time": "2025-01-12T08:27:11Z",
+      "entries": [
+        {
+          "entry_id": "t4",
+          "timestamp": "2025-01-12T08:25:15Z",
+          "phase": "lateral_movement",
+          "title": "Remote service execution on APP-02",
+          "description": "sc.exe created and started a temporary service over SMB/RPC.",
+          "event_ids": ["evt-1009", "evt-1010"],
+          "severity": "critical",
+          "entities": []
+        }
+      ]
+    },
+    {
+      "phase": "exfiltration",
+      "start_time": "2025-01-12T08:33:09Z",
+      "end_time": "2025-01-12T08:33:09Z",
+      "entries": [
+        {
+          "entry_id": "t5",
+          "timestamp": "2025-01-12T08:33:09Z",
+          "phase": "exfiltration",
+          "title": "Suspicious outbound archive transfer",
+          "description": "Archive file uploaded over HTTPS to an external host.",
+          "event_ids": ["evt-1013"],
+          "severity": "high",
+          "entities": []
+        }
+      ]
+    }
+  ]
+}

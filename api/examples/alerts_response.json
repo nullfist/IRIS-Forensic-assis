@@ -1,0 +1,77 @@
+{
+  "items": [
+    {
+      "alert_id": "alert-process-chain-1",
+      "investigation_id": "demo-phishing-001",
+      "name": "Office spawning script interpreter",
+      "family": "suspicious_process_chain",
+      "severity": "high",
+      "phase": "execution",
+      "confidence": 0.91,
+      "risk_score": 82.4,
+      "status": "new",
+      "description": "WINWORD.EXE spawned encoded PowerShell shortly after the user opened a document.",
+      "evidence": [
+        {
+          "event_id": "evt-1001",
+          "summary": "WINWORD.EXE opened Q1_Benefits_Update.docm",
+          "confidence": 0.78
+        },
+        {
+          "event_id": "evt-1002",
+          "summary": "powershell.exe launched with encoded command from WINWORD.EXE",
+          "confidence": 0.94
+        }
+      ]
+    },
+    {
+      "alert_id": "alert-credential-dump-1",
+      "investigation_id": "demo-phishing-001",
+      "name": "LSASS memory access by non-system process",
+      "family": "credential_dumping",
+      "severity": "critical",
+      "phase": "credential_access",
+      "confidence": 0.98,
+      "risk_score": 96.4,
+      "status": "investigating",
+      "description": "procdump.exe referenced lsass.exe and wrote a dump file to ProgramData.",
+      "evidence": [
+        {
+          "event_id": "evt-1006",
+          "summary": "procdump.exe executed with lsass.exe command-line arguments",
+          "confidence": 0.99
+        },
+        {
+          "event_id": "evt-1007",
+          "summary": "lsass_20250112.dmp created under C:\\ProgramData",
+          "confidence": 0.92
+        }
+      ]
+    },
+    {
+      "alert_id": "alert-lateral-1",
+      "investigation_id": "demo-phishing-001",
+      "name": "Remote service creation over admin channels",
+      "family": "lateral_movement",
+      "severity": "critical",
+      "phase": "lateral_movement",
+      "confidence": 0.93,
+      "risk_score": 94.1,
+      "status": "new",
+      "description": "sc.exe created and started a service on APP-02 after network logon activity.",
+      "evidence": [
+        {
+          "event_id": "evt-1009",
+          "summary": "SMB and RPC traffic from WKSTN-07 to APP-02",
+          "confidence": 0.83
+        },
+        {
+          "event_id": "evt-1010",
+          "summary": "sc.exe create TempUpdater binPath= \\\\APP-02\\ADMIN$\\updater.exe",
+          "confidence": 0.96
+        }
+      ]
+    }
+  ],
+  "total": 3
+}
