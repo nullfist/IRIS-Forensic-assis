@@ -1,0 +1,66 @@
+{
+  "capture_id": "pcap-demo-20250112",
+  "investigation_id": "demo-phishing-001",
+  "generated_at": "2025-01-12T08:40:00Z",
+  "flows": [
+    {
+      "timestamp": "2025-01-12T08:25:15Z",
+      "src_ip": "10.10.20.57",
+      "src_port": 49800,
+      "dst_ip": "10.10.30.44",
+      "dst_port": 445,
+      "protocol": "tcp",
+      "bytes_out": 74218,
+      "bytes_in": 21544,
+      "host": "WKSTN-07",
+      "peer_host": "APP-02",
+      "service": "smb",
+      "confidence": 0.96
+    },
+    {
+      "timestamp": "2025-01-12T08:25:18Z",
+      "src_ip": "10.10.20.57",
+      "src_port": 49802,
+      "dst_ip": "10.10.30.44",
+      "dst_port": 135,
+      "protocol": "tcp",
+      "bytes_out": 15324,
+      "bytes_in": 9482,
+      "host": "WKSTN-07",
+      "peer_host": "APP-02",
+      "service": "rpc",
+      "confidence": 0.93
+    },
+    {
+      "timestamp": "2025-01-12T08:27:03Z",
+      "src_ip": "10.10.20.57",
+      "src_port": 50115,
+      "dst_ip": "10.10.40.18",
+      "dst_port": 5985,
+      "protocol": "tcp",
+      "bytes_out": 20310,
+      "bytes_in": 11441,
+      "host": "WKSTN-07",
+      "peer_host": "DB-01",
+      "service": "winrm",
+      "confidence": 0.91
+    },
+    {
+      "timestamp": "2025-01-12T08:33:09Z",
+      "src_ip": "10.10.20.57",
+      "src_port": 49980,
+      "dst_ip": "45.77.22.91",
+      "dst_port": 443,
+      "protocol": "tcp",
+      "bytes_out": 8245731,
+      "bytes_in": 382921,
+      "host": "WKSTN-07",
+      "peer_host": null,
+      "service": "https",
+      "sni": "storage.sync-preview.net",
+      "domain": "storage.sync-preview.net",
+      "ja3": "769,49195-49199-49196-49200,0-11-10-35-13,23-24,0",
+      "confidence": 0.88
+    }
+  ]
+}

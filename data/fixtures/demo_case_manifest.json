@@ -1,0 +1,46 @@
+{
+  "investigation_id": "demo-phishing-001",
+  "name": "Default phishing-to-exfiltration demo",
+  "scenario": "phishing_to_exfiltration",
+  "description": "Demo investigation bundle containing Sysmon, EVTX-exported JSON, PCAP metadata, API examples, and expected analytic outcomes.",
+  "artifacts": [
+    {
+      "artifact_id": "sysmon-chain-1",
+      "source": "sysmon",
+      "path": "data/sample_logs/sysmon_attack_chain.jsonl",
+      "record_format": "jsonl",
+      "expected_event_count": 14
+    },
+    {
+      "artifact_id": "evtx-events-1",
+      "source": "evtx",
+      "path": "data/sample_logs/evtx_process_events.jsonl",
+      "record_format": "jsonl",
+      "expected_event_count": 5
+    },
+    {
+      "artifact_id": "pcap-meta-1",
+      "source": "pcap",
+      "path": "data/pcaps/lateral_movement_metadata.json",
+      "record_format": "json",
+      "expected_event_count": 4
+    }
+  ],
+  "expected_alert_families": [
+    "suspicious_process_chain",
+    "credential_dumping",
+    "lateral_movement"
+  ],
+  "expected_phases": [
+    "initial_access",
+    "execution",
+    "credential_access",
+    "lateral_movement",
+    "exfiltration"
+  ],
+  "entrypoints": {
+    "openapi": "api/openapi/iris-openapi.yaml",
+    "postman_collection": "api/postman/IRIS.postman_collection.json",
+    "scenario_guide": "data/scenarios/phishing_to_exfiltration.md"
+  }
+}

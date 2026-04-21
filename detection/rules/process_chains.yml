@@ -1,0 +1,260 @@
+# Process Chain Detection Rules
+# These rules detect suspicious process execution patterns commonly seen in attacks
+
+---
+# Rule: Office spawning PowerShell (common phishing payload delivery)
+rule_id: PROC-001
+name: Suspicious Office to PowerShell Chain
+description: >
+  Detects when Microsoft Office applications (WINWORD, EXCEL, POWERPNT) spawn
+  PowerShell, which is a common indicator of malicious document exploitation.
+family: suspicious_process_chain
+severity: critical
+confidence: 0.92
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+match_any:
+  - winword
+  - excel
+  - powerpnt
+  - outlook
+conditions:
+  - field: process.parent_image
+    operator: contains
+    value: ["winword", "excel", "powerpnt", "outlook"]
+  - field: process.image
+    operator: contains
+    value: powershell
+  - field: process.command_line
+    operator: regex
+    value: '(?i)(downloadstring|invoke-webrequest|invoke-expression|iex|encodedcommand)'
+
+---
+# Rule: CMD spawning from Office
+rule_id: PROC-002
+name: Office to Command Prompt Chain
+description: >
+  Detects when Office applications spawn cmd.exe, which may indicate
+  exploitation of CVE-2017-0199 or similar vulnerabilities.
+family: suspicious_process_chain
+severity: high
+confidence: 0.88
+phase: execution
+attack_tactics:
+  - Execution
+match_any:
+  - winword
+  - excel
+  - powerpnt
+  - cmd.exe
+conditions:
+  - field: process.parent_image
+    operator: contains
+    value: ["winword", "excel", "powerpnt"]
+  - field: process.image
+    operator: contains
+    value: cmd.exe
+
+---
+# Rule: WScript/CScript from Office
+rule_id: PROC-003
+name: Office to Script Host Chain
+description: >
+  Detects when Office applications spawn Windows Script Host (wscript/cscript),
+  commonly used for VBScript-based malware delivery.
+family: suspicious_process_chain
+severity: high
+confidence: 0.85
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+match_any:
+  - winword
+  - excel
+  - wscript
+  - cscript
+conditions:
+  - field: process.parent_image
+    operator: contains
+    value: ["winword", "excel", "powerpnt"]
+  - field: process.image
+    operator: contains
+    value: ["wscript", "cscript"]
+
+---
+# Rule: Rundll32 from suspicious parent
+rule_id: PROC-004
+name: Suspicious Rundll32 Execution
+description: >
+  Detects rundll32.exe being spawned by non-system processes, which is
+  a common living-off-the-land technique for code execution.
+family: suspicious_process_chain
+severity: high
+confidence: 0.80
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+match_any:
+  - rundll32
+conditions:
+  - field: process.image
+    operator: contains
+    value: rundll32
+  - field: process.command_line
+    operator: not_contains
+    value: ["system32", "syswow64"]
+
+---
+# Rule: Regsvr32 execution (Squiblydoo)
+rule_id: PROC-005
+name: Regsvr32 Scriptlet Execution
+description: >
+  Detects regsvr32.exe being used to execute scriptlets, a technique
+  known as "Squiblydoo" used to bypass application whitelisting.
+family: suspicious_process_chain
+severity: high
+confidence: 0.87
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+  - Technique: T1218.010
+match_any:
+  - regsvr32
+conditions:
+  - field: process.image
+    operator: contains
+    value: regsvr32
+  - field: process.command_line
+    operator: regex
+    value: '(?i)(scrobj\.dll|url\.dll|/i:/s)'
+
+---
+# Rule: MsBuild execution
+rule_id: PROC-006
+name: MsBuild Code Compilation
+description: >
+  Detects MsBuild being used to compile and execute malicious code,
+  a technique used to bypass application control solutions.
+family: suspicious_process_chain
+severity: high
+confidence: 0.83
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+  - Technique: T1127
+match_any:
+  - msbuild
+conditions:
+  - field: process.image
+    operator: contains
+    value: msbuild
+  - field: process.command_line
+    operator: regex
+    value: '(?i)(\.xml|\.proj|/target)'
+
+---
+# Rule: InstallUtil execution
+rule_id: PROC-007
+name: InstallUtil Code Execution
+description: >
+  Detects InstallUtil being used to execute malicious .NET assemblies,
+  bypassing application whitelisting controls.
+family: suspicious_process_chain
+severity: high
+confidence: 0.84
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+  - Technique: T1218.004
+match_any:
+  - installutil
+conditions:
+  - field: process.image
+    operator: contains
+    value: installutil
+  - field: process.command_line
+    operator: regex
+    value: '(?i)(\.exe|/i|/u)'
+
+---
+# Rule: PowerShell download cradle
+rule_id: PROC-008
+name: PowerShell Download Cradle
+description: >
+  Detects PowerShell one-liner download cradles commonly used in
+  fileless malware delivery.
+family: suspicious_process_chain
+severity: critical
+confidence: 0.94
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+  - Technique: T1059.001
+match_any:
+  - powershell
+  - pwsh
+conditions:
+  - field: process.image
+    operator: contains
+    value: ["powershell", "pwsh"]
+  - field: process.command_line
+    operator: regex
+    value: '(?i)(iex|invoke-expression|invoke-webrequest|wget|curl|downloadfile|downloadstring).*http'
+
+---
+# Rule: CertUtil download
+rule_id: PROC-009
+name: CertUtil Download Activity
+description: >
+  Detects CertUtil being used to download files, a living-off-the-land
+  technique for payload delivery.
+family: suspicious_process_chain
+severity: medium
+confidence: 0.78
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+  - Technique: T1105
+match_any:
+  - certutil
+conditions:
+  - field: process.image
+    operator: contains
+    value: certutil
+  - field: process.command_line
+    operator: regex
+    value: '(?i)(-urlcache|-addstore|-delstore).*http'
+
+---
+# Rule: Bitsadmin download
+rule_id: PROC-010
+name: Bitsadmin Download Activity
+description: >
+  Detects Bitsadmin being used to download files, commonly used by
+  attackers for payload delivery.
+family: suspicious_process_chain
+severity: medium
+confidence: 0.76
+phase: execution
+attack_tactics:
+  - Execution
+  - Defense Evasion
+  - Technique: T1105
+match_any:
+  - bitsadmin
+conditions:
+  - field: process.image
+    operator: contains
+    value: bitsadmin
+  - field: process.command_line
+    operator: regex
+    value: '(?i)(/transfer|/create).*http'

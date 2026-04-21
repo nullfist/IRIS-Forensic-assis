@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ../../
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ../development/backend.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../data:/app/data:ro
+      - ../../detection:/app/detection:ro
+      - ../../graph:/app/graph:ro
+      - ../../api:/app/api:ro
+    depends_on:
+      - postgres
+      - neo4j
+      - redis
+
+  frontend:
+    build:
+      context: ../../
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: iris
+      POSTGRES_USER: iris
+      POSTGRES_PASSWORD: iris_prod_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  neo4j:
+    image: neo4j:5.20
+    environment:
+      NEO4J_AUTH: neo4j/iris_demo_password
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1g
+      NEO4J_server_default__listen__address: 0.0.0.0
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+volumes:
+  postgres_data:
+  neo4j_data:

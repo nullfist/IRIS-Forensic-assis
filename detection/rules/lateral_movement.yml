@@ -1,0 +1,270 @@
+# Lateral Movement Detection Rules
+# These rules detect techniques used for lateral movement within a network,
+# including SMB, PsExec, WMI, and remote service usage
+
+---
+# Rule: PsExec execution
+rule_id: LAT-001
+name: PsExec Remote Execution
+description: >
+  Detects PsExec or PsExec-like tools being used for remote execution,
+  a common lateral movement technique.
+family: lateral_movement
+severity: high
+confidence: 0.89
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Technique: T1021.002
+match_any:
+  - psexec
+  - psservice
+  - psremex
+conditions:
+  - field: process.image
+    operator: regex
+    value: "(?i)(psexec|psservice|paexec|csprocess)"
+  - field: network.dst_port
+    operator: in
+    value: [445, 135, 139]
+
+---
+# Rule: SMB admin share access
+rule_id: LAT-002
+name: SMB Admin Share Access
+description: >
+  Detects access to administrative shares (ADMIN$, C$, IPC$) over SMB,
+  commonly used for lateral movement.
+family: lateral_movement
+severity: high
+confidence: 0.82
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Technique: T1021.002
+match_any:
+  - smb
+  - admin
+  - share
+conditions:
+  - field: network.dst_port
+    operator: equals
+    value: 445
+  - field: file.path
+    operator: regex
+    value: '(?i)(\\\\.*\\admin\$|\\\\.*\\c\$|\\\\.*\\ipc\$)'
+
+---
+# Rule: WMI remote execution
+rule_id: LAT-003
+name: WMI Remote Execution
+description: >
+  Detects WMI being used for remote command execution, a common
+  living-off-the-land lateral movement technique.
+family: lateral_movement
+severity: high
+confidence: 0.86
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Technique: T1047
+match_any:
+  - wmi
+  - wmic
+  - winrm
+conditions:
+  - field: process.image
+    operator: regex
+    value: "(?i)(wmic?|winrm)"
+  - field: process.command_line
+    operator: regex
+    value: "(?i)(/node:|process.*create|/output)"
+
+---
+# Rule: WinRM remote execution
+rule_id: LAT-004
+name: WinRM Remote Execution
+description: >
+  Detects Windows Remote Management (WinRM) being used for remote
+  command execution.
+family: lateral_movement
+severity: high
+confidence: 0.84
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Technique: T1021.006
+match_any:
+  - winrm
+  - powershell-remoting
+  - invoke-command
+conditions:
+  - field: network.dst_port
+    operator: in
+    value: [5985, 5986]
+  - field: process.command_line
+    operator: regex
+    value: "(?i)(invoke-command|enter-pssession|new-pssession)"
+
+---
+# Rule: RDP lateral movement
+rule_id: LAT-005
+name: RDP Lateral Movement
+description: >
+  Detects RDP connections that may indicate lateral movement,
+  especially when originating from unusual sources.
+family: lateral_movement
+severity: medium
+confidence: 0.75
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Technique: T1021.001
+match_any:
+  - rdp
+  - mstsc
+  - terminal
+conditions:
+  - field: network.dst_port
+    operator: equals
+    value: 3389
+  - field: process.image
+    operator: contains
+    value: mstsc
+
+---
+# Rule: Service creation on remote host
+rule_id: LAT-006
+name: Remote Service Creation
+description: >
+  Detects service creation events that may indicate lateral movement
+  via service installation.
+family: lateral_movement
+severity: high
+confidence: 0.87
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Technique: T1021
+match_any:
+  - service
+  - sc.exe
+  - createservice
+conditions:
+  - field: process.image
+    operator: contains
+    value: ["sc.exe", "services.exe"]
+  - field: process.command_line
+    operator: regex
+    value: "(?i)(create|config|start).*service"
+
+---
+# Rule: Scheduled task on remote host
+rule_id: LAT-007
+name: Remote Scheduled Task Creation
+description: >
+  Detects scheduled task creation on remote systems, a common
+  lateral movement and persistence technique.
+family: lateral_movement
+severity: high
+confidence: 0.85
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Persistence
+  - Technique: T1053.005
+match_any:
+  - schtasks
+  - scheduled
+  - task
+conditions:
+  - field: process.image
+    operator: contains
+    value: schtasks.exe
+  - field: process.command_line
+    operator: regex
+    value: "(?i)(/create|/run|/s).*"
+
+---
+# Rule: Pass-the-Hash
+rule_id: LAT-008
+name: Pass-the-Hash Attack
+description: >
+  Detects indicators of pass-the-hash attacks where NTLM hashes
+  are used for authentication instead of plaintext passwords.
+family: lateral_movement
+severity: critical
+confidence: 0.90
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Credential Access
+  - Technique: T1550.002
+match_any:
+  - pth
+  - pass-the-hash
+  - ntlm
+conditions:
+  - field: raw_data.EventID
+    operator: equals
+    value: 4624
+  - field: raw_data.LogonType
+    operator: equals
+    value: 9
+  - field: raw_data.AuthenticationPackageName
+    operator: equals
+    value: NTLM
+
+---
+# Rule: Overpass-the-Hash
+rule_id: LAT-009
+name: Overpass-the-Hash Attack
+description: >
+  Detects overpass-the-hash attacks where NTLM hashes are used
+  to request Kerberos tickets.
+family: lateral_movement
+severity: critical
+confidence: 0.88
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Credential Access
+  - Technique: T1550.002
+match_any:
+  - overpass
+  - kerberos
+  - ticket
+conditions:
+  - field: raw_data.EventID
+    operator: equals
+    value: 4769
+  - field: raw_data.FailureCode
+    operator: equals
+    value: "0x6"
+
+---
+# Rule: Unusual SMB connection patterns
+rule_id: LAT-010
+name: Anomalous SMB Connection Pattern
+description: >
+  Detects unusual patterns of SMB connections that may indicate
+  automated lateral movement or scanning.
+family: lateral_movement
+severity: medium
+confidence: 0.72
+phase: lateral_movement
+attack_tactics:
+  - Lateral Movement
+  - Discovery
+  - Technique: T1021.002
+match_any:
+  - smb
+  - netuse
+  - scan
+conditions:
+  - field: network.dst_port
+    operator: equals
+    value: 445
+  - field: process.command_line
+    operator: regex
+    value: "(?i)(net.*use|net.*view)"

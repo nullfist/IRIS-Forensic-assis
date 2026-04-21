@@ -1,0 +1,448 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iris-backend
+  namespace: iris
+  labels:
+    app: iris-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: iris-backend
+  template:
+    metadata:
+      labels:
+        app: iris-backend
+    spec:
+      containers:
+      - name: iris-backend
+        image: iris/backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_DSN
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: postgres-dsn
+        - name: NEO4J_URI
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: neo4j-uri
+        - name: NEO4J_USER
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: neo4j-user
+        - name: NEO4J_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: neo4j-password
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: redis-url
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: iris-data
+          mountPath: /app/data
+      volumes:
+      - name: iris-data
+        persistentVolumeClaim:
+          claimName: iris-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iris-backend-service
+  namespace: iris
+  labels:
+    app: iris-backend
+spec:
+  selector:
+    app: iris-backend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iris-frontend
+  namespace: iris
+  labels:
+    app: iris-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: iris-frontend
+  template:
+    metadata:
+      labels:
+        app: iris-frontend
+    spec:
+      containers:
+      - name: iris-frontend
+        image: iris/frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_API_BASE_URL
+          value: "http://iris-backend-service"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iris-frontend-service
+  namespace: iris
+  labels:
+    app: iris-frontend
+spec:
+  selector:
+    app: iris-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: iris
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        env:
+        - name: POSTGRES_DB
+          value: iris
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: postgres-password
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - iris
+            - -d
+            - iris
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - iris
+            - -d
+            - iris
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: iris
+  labels:
+    app: postgres
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j
+  namespace: iris
+spec:
+  serviceName: neo4j
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neo4j
+  template:
+    metadata:
+      labels:
+        app: neo4j
+    spec:
+      containers:
+      - name: neo4j
+        image: neo4j:5.20-enterprise
+        env:
+        - name: NEO4J_ACCEPT_LICENSE_AGREEMENT
+          value: "yes"
+        - name: NEO4J_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: iris-secrets
+              key: neo4j-auth
+        - name: NEO4J_dbms_security_procedures_unrestricted
+          value: "apoc.*,algo.*,gds.*"
+        - name: NEO4J_apoc_export_file_enabled
+          value: "true"
+        - name: NEO4J_apoc_import_file_enabled
+          value: "true"
+        - name: NEO4J_apoc_import_file_use__neo4j__config
+          value: "true"
+        ports:
+        - containerPort: 7474
+          name: http
+        - containerPort: 7687
+          name: bolt
+        volumeMounts:
+        - name: neo4j-storage
+          mountPath: /data
+        - name: neo4j-logs
+          mountPath: /logs
+        - name: neo4j-import
+          mountPath: /import
+        - name: neo4j-plugins
+          mountPath: /plugins
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7474
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 7474
+          initialDelaySeconds: 30
+          periodSeconds: 10
+  volumeClaimTemplates:
+  - metadata:
+      name: neo4j-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 50Gi
+  - metadata:
+      name: neo4j-logs
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+  - metadata:
+      name: neo4j-import
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+  - metadata:
+      name: neo4j-plugins
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j
+  namespace: iris
+  labels:
+    app: neo4j
+spec:
+  ports:
+  - port: 7474
+    targetPort: 7474
+    name: http
+  - port: 7687
+    targetPort: 7687
+    name: bolt
+  selector:
+    app: neo4j
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: iris
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: iris
+  labels:
+    app: redis
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iris-secrets
+  namespace: iris
+type: Opaque
+stringData:
+  postgres-user: "iris"
+  postgres-password: "iris"
+  postgres-dsn: "postgresql://iris:iris@postgres:5432/iris"
+  neo4j-user: "neo4j"
+  neo4j-password: "irispassword"
+  neo4j-auth: "neo4j/irispassword"
+  neo4j-uri: "bolt://neo4j:7687"
+  redis-url: "redis://redis:6379/0"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: iris
